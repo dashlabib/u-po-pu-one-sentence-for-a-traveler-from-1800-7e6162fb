@@ -11,9 +11,12 @@ access, no clock reads, no randomness, so two runs always produce
 identical output.
 
 The output directory is ``$MAKEFUN_OUTPUT_DIR`` when set, else
-``/output``.
+``/output``. Pass ``--output-dir <dir>`` to choose it on the command
+line instead, or ``--verify-only`` to check the sentence without
+writing anything.
 """
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -38,10 +41,23 @@ def validate(text: str) -> None:
         raise SystemExit("entry must be a single line")
 
 
-def main() -> int:
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", default=None,
+                        help="directory to write entry.txt into")
+    parser.add_argument("--verify-only", action="store_true",
+                        help="validate the sentence without writing it")
+    return parser.parse_args(argv)
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
     text = load_sentence()
     validate(text)
-    out_dir = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+    if args.verify_only:
+        print(f"Valid: {len(text)} characters")
+        return 0
+    out_dir = Path(args.output_dir or os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "entry.txt"
     out_path.write_text(text, encoding="utf-8")
